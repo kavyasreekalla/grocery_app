@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'signup_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
   runApp(const MyApp());
 }
 
@@ -85,7 +89,21 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             const SizedBox(height: 30),
             ElevatedButton(
-              onPressed: () {},
+              onPressed: () async {
+                try {
+                  await FirebaseAuth.instance.signInWithEmailAndPassword(
+                    email: emailController.text.trim(),
+                    password: passwordController.text.trim(),
+                  );
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Login Successful!')),
+                  );
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error: $e')),
+                  );
+                }
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.green,
                 minimumSize: const Size(double.infinity, 50),

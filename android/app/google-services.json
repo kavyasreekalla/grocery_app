@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "854476160243",
+    "project_id": "voicecart-6b655",
+    "storage_bucket": "voicecart-6b655.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:854476160243:android:1301d4e391360d872c0b86",
+        "android_client_info": {
+          "package_name": "com.example.grocery_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAx0yAx1yffBVA9MSwDp5vUxifMy7rHP8c"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

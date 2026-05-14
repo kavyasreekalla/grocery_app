@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -12,6 +14,47 @@ class _SignupScreenState extends State<SignupScreen> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   final phoneController = TextEditingController();
+  bool isLoading = false;
+
+  Future<void> signUp() async {
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      // Create user with email and password
+      UserCredential userCredential =
+          await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: emailController.text.trim(),
+        password: passwordController.text.trim(),
+      );
+
+      // Save user details to Firestore
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userCredential.user!.uid)
+          .set({
+        'name': nameController.text.trim(),
+        'email': emailController.text.trim(),
+        'phone': phoneController.text.trim(),
+        'createdAt': DateTime.now(),
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Account created successfully!')),
+      );
+
+      Navigator.pop(context);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+    }
+
+    setState(() {
+      isLoading = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -47,8 +90,6 @@ class _SignupScreenState extends State<SignupScreen> {
                 ),
               ),
               const SizedBox(height: 40),
-
-              // Name Field
               TextField(
                 controller: nameController,
                 decoration: InputDecoration(
@@ -60,8 +101,6 @@ class _SignupScreenState extends State<SignupScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-
-              // Email Field
               TextField(
                 controller: emailController,
                 decoration: InputDecoration(
@@ -73,8 +112,6 @@ class _SignupScreenState extends State<SignupScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-
-              // Phone Field
               TextField(
                 controller: phoneController,
                 keyboardType: TextInputType.phone,
@@ -87,8 +124,6 @@ class _SignupScreenState extends State<SignupScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-
-              // Password Field
               TextField(
                 controller: passwordController,
                 obscureText: true,
@@ -101,10 +136,8 @@ class _SignupScreenState extends State<SignupScreen> {
                 ),
               ),
               const SizedBox(height: 30),
-
-              // Sign Up Button
               ElevatedButton(
-                onPressed: () {},
+                onPressed: isLoading ? null : signUp,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
                   minimumSize: const Size(double.infinity, 50),
@@ -112,14 +145,14 @@ class _SignupScreenState extends State<SignupScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Text(
-                  'Sign Up',
-                  style: TextStyle(color: Colors.white, fontSize: 18),
-                ),
+                child: isLoading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text(
+                        'Sign Up',
+                        style: TextStyle(color: Colors.white, fontSize: 18),
+                      ),
               ),
               const SizedBox(height: 20),
-
-              // Login Link
               GestureDetector(
                 onTap: () {
                   Navigator.pop(context);
