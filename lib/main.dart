@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'signup_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'signup_screen.dart';
+import 'home_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -95,8 +96,11 @@ class _LoginScreenState extends State<LoginScreen> {
                     email: emailController.text.trim(),
                     password: passwordController.text.trim(),
                   );
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Login Successful!')),
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const HomeScreen(),
+                    ),
                   );
                 } catch (e) {
                   ScaffoldMessenger.of(context).showSnackBar(
