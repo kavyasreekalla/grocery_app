@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'signup_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -99,7 +100,14 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             const SizedBox(height: 20),
             GestureDetector(
-              onTap: () {},
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const SignupScreen(),
+                  ),
+                );
+              },
               child: const Text(
                 'New user? Sign up',
                 style: TextStyle(
