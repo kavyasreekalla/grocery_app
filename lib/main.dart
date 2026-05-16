@@ -6,7 +6,15 @@ import 'home_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(
+    options: const FirebaseOptions(
+      apiKey: "AIzaSyAx0yAx1yffBVA9MSwDp5vUxifMy7rHP8c",
+      appId: "1:854476160243:android:1301d4e391360d872c0b86",
+      messagingSenderId: "854476160243",
+      projectId: "voicecart-6b655",
+      storageBucket: "voicecart-6b655.firebasestorage.app",
+    ),
+  );
   runApp(const MyApp());
 }
 
