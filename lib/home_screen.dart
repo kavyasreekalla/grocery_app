@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:permission_handler/permission_handler.dart';
+import 'products_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -62,7 +63,7 @@ class _HomeScreenState extends State<HomeScreen> {
     'पानी': 'Water',
     'तेल': 'Oil',
 
-    // Telugu transliterated (spoken in English letters)
+    // Telugu transliterated
     'paalu': 'Milk',
     'palu': 'Milk',
     'biyyam': 'Rice',
@@ -78,7 +79,7 @@ class _HomeScreenState extends State<HomeScreen> {
     'noone': 'Oil',
     'nune': 'Oil',
 
-    // Hindi transliterated (spoken in English letters)
+    // Hindi transliterated
     'doodh': 'Milk',
     'dudh': 'Milk',
     'chawal': 'Rice',
@@ -167,43 +168,76 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  void navigateToProducts(String category) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ProductsScreen(category: category),
+      ),
+    );
+  }
+
   String findProduct(String spokenText) {
     String lowerText = spokenText.toLowerCase();
 
     // Check direct word match first
     for (String key in wordToProduct.keys) {
       if (lowerText.contains(key.toLowerCase())) {
-        return wordToProduct[key]!;
+        String product = wordToProduct[key]!;
+        navigateToProducts(product.toLowerCase());
+        return product;
       }
     }
 
-    // Smart matching for common variations
-    if (lowerText.contains('mil')) return 'Milk';
-    if (lowerText.contains('ric')) return 'Rice';
-    if (lowerText.contains('sug')) return 'Sugar';
-    if (lowerText.contains('oni')) return 'Onion';
-    if (lowerText.contains('tom')) return 'Tomato';
-    if (lowerText.contains('pot')) return 'Potato';
-    if (lowerText.contains('ban')) return 'Banana';
-    if (lowerText.contains('app')) return 'Apple';
-    if (lowerText.contains('bre')) return 'Bread';
-    if (lowerText.contains('egg')) return 'Egg';
-    if (lowerText.contains('wat')) return 'Water';
-    if (lowerText.contains('oil')) return 'Oil';
-    if (lowerText.contains('pal')) return 'Milk';
-    if (lowerText.contains('paa')) return 'Milk';
-    if (lowerText.contains('biy')) return 'Rice';
-    if (lowerText.contains('chak')) return 'Sugar';
-    if (lowerText.contains('ulli')) return 'Onion';
-    if (lowerText.contains('gudd')) return 'Egg';
-    if (lowerText.contains('noon')) return 'Oil';
-    if (lowerText.contains('dood')) return 'Milk';
-    if (lowerText.contains('chaw')) return 'Rice';
-    if (lowerText.contains('chin')) return 'Sugar';
-    if (lowerText.contains('pyaa')) return 'Onion';
-    if (lowerText.contains('aloo')) return 'Potato';
-    if (lowerText.contains('kela')) return 'Banana';
-    if (lowerText.contains('pani')) return 'Water';
+    // Smart matching
+    if (lowerText.contains('mil') || lowerText.contains('pal') || lowerText.contains('dood')) {
+      navigateToProducts('milk');
+      return 'Milk';
+    }
+    if (lowerText.contains('ric') || lowerText.contains('biy') || lowerText.contains('chaw')) {
+      navigateToProducts('rice');
+      return 'Rice';
+    }
+    if (lowerText.contains('sug') || lowerText.contains('chak') || lowerText.contains('chin')) {
+      navigateToProducts('sugar');
+      return 'Sugar';
+    }
+    if (lowerText.contains('oni') || lowerText.contains('ulli') || lowerText.contains('pyaa')) {
+      navigateToProducts('onion');
+      return 'Onion';
+    }
+    if (lowerText.contains('oil') || lowerText.contains('noon') || lowerText.contains('tel')) {
+      navigateToProducts('oil');
+      return 'Oil';
+    }
+    if (lowerText.contains('tom')) {
+      navigateToProducts('tomato');
+      return 'Tomato';
+    }
+    if (lowerText.contains('pot') || lowerText.contains('aloo')) {
+      navigateToProducts('potato');
+      return 'Potato';
+    }
+    if (lowerText.contains('ban') || lowerText.contains('kela')) {
+      navigateToProducts('banana');
+      return 'Banana';
+    }
+    if (lowerText.contains('app')) {
+      navigateToProducts('apple');
+      return 'Apple';
+    }
+    if (lowerText.contains('bre')) {
+      navigateToProducts('bread');
+      return 'Bread';
+    }
+    if (lowerText.contains('egg') || lowerText.contains('gudd') || lowerText.contains('anda')) {
+      navigateToProducts('egg');
+      return 'Egg';
+    }
+    if (lowerText.contains('wat') || lowerText.contains('pani')) {
+      navigateToProducts('water');
+      return 'Water';
+    }
 
     return '';
   }
@@ -397,7 +431,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget buildCategoryCard(String emoji, String name, Color color) {
     return GestureDetector(
-      onTap: () {},
+      onTap: () {
+        navigateToProducts(name.toLowerCase());
+      },
       child: Container(
         decoration: BoxDecoration(
           color: color,
