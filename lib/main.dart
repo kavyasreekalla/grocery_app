@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
 import 'signup_screen.dart';
 import 'home_screen.dart';
+import 'language_provider.dart';
+import 'app_strings.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,7 +18,12 @@ void main() async {
       storageBucket: "voicecart-6b655.firebasestorage.app",
     ),
   );
-  runApp(const MyApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (context) => LanguageProvider(),
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -44,9 +52,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final langProvider = Provider.of<LanguageProvider>(context);
+    final lang = langProvider.language;
+
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -66,9 +77,9 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Shop smarter with your voice',
-              style: TextStyle(
+            Text(
+              AppStrings.get('shop_smarter', lang),
+              style: const TextStyle(
                 fontSize: 14,
                 color: Colors.grey,
               ),
@@ -77,7 +88,7 @@ class _LoginScreenState extends State<LoginScreen> {
             TextField(
               controller: emailController,
               decoration: InputDecoration(
-                labelText: 'Email',
+                labelText: AppStrings.get('email', lang),
                 prefixIcon: const Icon(Icons.email, color: Colors.green),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -89,7 +100,7 @@ class _LoginScreenState extends State<LoginScreen> {
               controller: passwordController,
               obscureText: true,
               decoration: InputDecoration(
-                labelText: 'Password',
+                labelText: AppStrings.get('password', lang),
                 prefixIcon: const Icon(Icons.lock, color: Colors.green),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -123,12 +134,39 @@ class _LoginScreenState extends State<LoginScreen> {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Text(
-                'Login',
-                style: TextStyle(color: Colors.white, fontSize: 18),
+              child: Text(
+                AppStrings.get('login', lang),
+                style: const TextStyle(color: Colors.white, fontSize: 18),
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
+            // Language Toggle
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.language, color: Colors.green),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: () => langProvider.toggleLanguage(),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.green,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      langProvider.languageLabel,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
             GestureDetector(
               onTap: () {
                 Navigator.push(
@@ -138,9 +176,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 );
               },
-              child: const Text(
-                'New user? Sign up',
-                style: TextStyle(
+              child: Text(
+                AppStrings.get('new_user', lang),
+                style: const TextStyle(
                   color: Colors.green,
                   fontSize: 14,
                   decoration: TextDecoration.underline,

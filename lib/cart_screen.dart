@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'language_provider.dart';
+import 'app_strings.dart';
 
 class CartScreen extends StatefulWidget {
   final List<Map<String, dynamic>> cartItems;
@@ -18,7 +21,10 @@ class _CartScreenState extends State<CartScreen> {
   }
 
   int get totalPrice {
-    return items.fold(0, (sum, item) => sum + (item['price'] as int) * (item['quantity'] as int));
+    return items.fold(
+        0,
+        (sum, item) =>
+            sum + (item['price'] as int) * (item['quantity'] as int));
   }
 
   void increaseQuantity(int index) {
@@ -39,34 +45,37 @@ class _CartScreenState extends State<CartScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final langProvider = Provider.of<LanguageProvider>(context);
+    final lang = langProvider.language;
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.green,
-        title: const Text(
-          'My Cart',
-          style: TextStyle(
+        title: Text(
+          AppStrings.get('my_cart', lang),
+          style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
           ),
         ),
       ),
       body: items.isEmpty
-          ? const Center(
+          ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.shopping_cart_outlined,
+                  const Icon(Icons.shopping_cart_outlined,
                       size: 80, color: Colors.grey),
-                  SizedBox(height: 16),
+                  const SizedBox(height: 16),
                   Text(
-                    'Your cart is empty!',
-                    style: TextStyle(fontSize: 18, color: Colors.grey),
+                    AppStrings.get('cart_empty', lang),
+                    style: const TextStyle(fontSize: 18, color: Colors.grey),
                   ),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   Text(
-                    'Use voice search to add products',
-                    style: TextStyle(fontSize: 14, color: Colors.grey),
+                    AppStrings.get('use_voice', lang),
+                    style: const TextStyle(fontSize: 14, color: Colors.grey),
                   ),
                 ],
               ),
@@ -198,9 +207,9 @@ class _CartScreenState extends State<CartScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
-                            'Total Amount:',
-                            style: TextStyle(
+                          Text(
+                            AppStrings.get('total', lang),
+                            style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                             ),
@@ -221,15 +230,17 @@ class _CartScreenState extends State<CartScreen> {
                           showDialog(
                             context: context,
                             builder: (context) => AlertDialog(
-                              title: const Text('Order Placed! 🎉'),
+                              title: Text(
+                                  AppStrings.get('order_placed', lang)),
                               content: Text(
-                                'Your order of ₹$totalPrice has been placed successfully!',
+                                '₹$totalPrice',
                               ),
                               actions: [
                                 TextButton(
                                   onPressed: () {
-                                    Navigator.pop(context);
-                                    Navigator.pop(context);
+                                    setState(() => items.clear());
+                                    Navigator.pop(context, items);
+                                    Navigator.pop(context, items);
                                   },
                                   child: const Text(
                                     'OK',
@@ -247,9 +258,9 @@ class _CartScreenState extends State<CartScreen> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: const Text(
-                          'Place Order',
-                          style: TextStyle(
+                        child: Text(
+                          AppStrings.get('place_order', lang),
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 18,
                           ),

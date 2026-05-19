@@ -1,21 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
 import 'cart_screen.dart';
+import 'language_provider.dart';
+import 'app_strings.dart';
 
 class ProductsScreen extends StatefulWidget {
   final String category;
-  const ProductsScreen({super.key, required this.category});
+  final List<Map<String, dynamic>> cartItems;
+  const ProductsScreen({
+    super.key,
+    required this.category,
+    required this.cartItems,
+  });
 
   @override
   State<ProductsScreen> createState() => _ProductsScreenState();
 }
 
 class _ProductsScreenState extends State<ProductsScreen> {
-  List<Map<String, dynamic>> cartItems = [];
+  late List<Map<String, dynamic>> cartItems;
 
-  void addToCart(Map<String, dynamic> product) {
+  @override
+  void initState() {
+    super.initState();
+    cartItems = List.from(widget.cartItems);
+  }
+
+  void addToCart(Map<String, dynamic> product, String lang) {
     setState(() {
-      // Check if product already in cart
       int existingIndex = cartItems.indexWhere(
         (item) => item['name'] == product['name'],
       );
@@ -34,21 +47,49 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('${product['name']} added to cart!'),
+        content: Text(
+          lang == 'en'
+              ? '${product['name']} added to cart!'
+              : lang == 'te'
+                  ? '${product['name']} కార్ట్‌కి జోడించబడింది!'
+                  : '${product['name']} कार्ट में जोड़ा गया!',
+        ),
         duration: const Duration(seconds: 1),
         backgroundColor: Colors.green,
       ),
     );
   }
 
+  String getCategoryTitle(String category, String lang) {
+    switch (category.toLowerCase()) {
+      case 'vegetables': return AppStrings.get('vegetables', lang);
+      case 'fruits': return AppStrings.get('fruits', lang);
+      case 'dairy': return AppStrings.get('dairy', lang);
+      case 'grains': return AppStrings.get('grains', lang);
+      case 'meat': return AppStrings.get('meat', lang);
+      case 'beverages': return AppStrings.get('beverages', lang);
+      default: return category[0].toUpperCase() + category.substring(1);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final langProvider = Provider.of<LanguageProvider>(context);
+    final lang = langProvider.language;
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.green,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () {
+            // Return updated cart to HomeScreen
+            Navigator.pop(context, cartItems);
+          },
+        ),
         title: Text(
-          widget.category[0].toUpperCase() + widget.category.substring(1),
+          getCategoryTitle(widget.category, lang),
           style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
@@ -59,13 +100,16 @@ class _ProductsScreenState extends State<ProductsScreen> {
             children: [
               IconButton(
                 icon: const Icon(Icons.shopping_cart, color: Colors.white),
-                onPressed: () {
-                  Navigator.push(
+                onPressed: () async {
+                  final updatedCart = await Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => CartScreen(cartItems: cartItems),
                     ),
                   );
+                  if (updatedCart != null) {
+                    setState(() => cartItems = updatedCart);
+                  }
                 },
               ),
               if (cartItems.isNotEmpty)
@@ -104,7 +148,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
           }
 
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Center(
+            return Center(
               child: Text(
                 'No products found!',
                 style: TextStyle(fontSize: 16, color: Colors.grey),
@@ -183,7 +227,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                       ),
                     ),
                     ElevatedButton(
-                      onPressed: () => addToCart(product),
+                      onPressed: () => addToCart(product, lang),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green,
                         shape: RoundedRectangleBorder(
@@ -194,9 +238,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
                           vertical: 8,
                         ),
                       ),
-                      child: const Text(
-                        'Add',
-                        style: TextStyle(color: Colors.white),
+                      child: Text(
+                        AppStrings.get('add', lang),
+                        style: const TextStyle(color: Colors.white),
                       ),
                     ),
                   ],

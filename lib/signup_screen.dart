@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
+import 'language_provider.dart';
+import 'app_strings.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -16,20 +19,16 @@ class _SignupScreenState extends State<SignupScreen> {
   final phoneController = TextEditingController();
   bool isLoading = false;
 
-  Future<void> signUp() async {
-    setState(() {
-      isLoading = true;
-    });
+  Future<void> signUp(String lang) async {
+    setState(() => isLoading = true);
 
     try {
-      // Create user with email and password
       UserCredential userCredential =
           await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: emailController.text.trim(),
         password: passwordController.text.trim(),
       );
 
-      // Save user details to Firestore
       await FirebaseFirestore.instance
           .collection('users')
           .doc(userCredential.user!.uid)
@@ -41,7 +40,10 @@ class _SignupScreenState extends State<SignupScreen> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Account created successfully!')),
+        SnackBar(
+          content: Text(AppStrings.get('order_placed', lang)),
+          backgroundColor: Colors.green,
+        ),
       );
 
       Navigator.pop(context);
@@ -51,13 +53,14 @@ class _SignupScreenState extends State<SignupScreen> {
       );
     }
 
-    setState(() {
-      isLoading = false;
-    });
+    setState(() => isLoading = false);
   }
 
   @override
   Widget build(BuildContext context) {
+    final langProvider = Provider.of<LanguageProvider>(context);
+    final lang = langProvider.language;
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: Padding(
@@ -82,9 +85,9 @@ class _SignupScreenState extends State<SignupScreen> {
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
-                'Create your account',
-                style: TextStyle(
+              Text(
+                AppStrings.get('create_account', lang),
+                style: const TextStyle(
                   fontSize: 14,
                   color: Colors.grey,
                 ),
@@ -93,7 +96,7 @@ class _SignupScreenState extends State<SignupScreen> {
               TextField(
                 controller: nameController,
                 decoration: InputDecoration(
-                  labelText: 'Full Name',
+                  labelText: AppStrings.get('name', lang),
                   prefixIcon: const Icon(Icons.person, color: Colors.green),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -104,7 +107,7 @@ class _SignupScreenState extends State<SignupScreen> {
               TextField(
                 controller: emailController,
                 decoration: InputDecoration(
-                  labelText: 'Email',
+                  labelText: AppStrings.get('email', lang),
                   prefixIcon: const Icon(Icons.email, color: Colors.green),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -116,7 +119,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 controller: phoneController,
                 keyboardType: TextInputType.phone,
                 decoration: InputDecoration(
-                  labelText: 'Phone Number',
+                  labelText: AppStrings.get('phone', lang),
                   prefixIcon: const Icon(Icons.phone, color: Colors.green),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -128,7 +131,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 controller: passwordController,
                 obscureText: true,
                 decoration: InputDecoration(
-                  labelText: 'Password',
+                  labelText: AppStrings.get('password', lang),
                   prefixIcon: const Icon(Icons.lock, color: Colors.green),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -136,8 +139,37 @@ class _SignupScreenState extends State<SignupScreen> {
                 ),
               ),
               const SizedBox(height: 30),
+
+              // Language Toggle
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.language, color: Colors.green),
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: () => langProvider.toggleLanguage(),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.green,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        langProvider.languageLabel,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+
               ElevatedButton(
-                onPressed: isLoading ? null : signUp,
+                onPressed: isLoading ? null : () => signUp(lang),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
                   minimumSize: const Size(double.infinity, 50),
@@ -147,19 +179,18 @@ class _SignupScreenState extends State<SignupScreen> {
                 ),
                 child: isLoading
                     ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text(
-                        'Sign Up',
-                        style: TextStyle(color: Colors.white, fontSize: 18),
+                    : Text(
+                        AppStrings.get('signup', lang),
+                        style: const TextStyle(
+                            color: Colors.white, fontSize: 18),
                       ),
               ),
               const SizedBox(height: 20),
               GestureDetector(
-                onTap: () {
-                  Navigator.pop(context);
-                },
-                child: const Text(
-                  'Already have an account? Login',
-                  style: TextStyle(
+                onTap: () => Navigator.pop(context),
+                child: Text(
+                  AppStrings.get('have_account', lang),
+                  style: const TextStyle(
                     color: Colors.green,
                     fontSize: 14,
                     decoration: TextDecoration.underline,
