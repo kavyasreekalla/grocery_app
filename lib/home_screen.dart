@@ -22,8 +22,6 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isListening = false;
   String _recognizedText = '';
   String _foundProduct = '';
-
-  // Shared cart — lives in HomeScreen and passed to all product screens
   List<Map<String, dynamic>> cartItems = [];
 
   final Map<String, String> wordToProduct = {
@@ -31,22 +29,59 @@ class _HomeScreenState extends State<HomeScreen> {
     'onion': 'Onion', 'tomato': 'Tomato', 'potato': 'Potato',
     'banana': 'Banana', 'apple': 'Apple', 'bread': 'Bread',
     'egg': 'Egg', 'eggs': 'Egg', 'water': 'Water', 'oil': 'Oil',
+    'butter': 'Butter', 'curd': 'Curd', 'chicken': 'Chicken',
+    'mango': 'Mango', 'dal': 'Dal', 'poha': 'Poha',
+    'juice': 'Juice', 'cola': 'Cola', 'coke': 'Cola',
     'పాలు': 'Milk', 'బియ్యం': 'Rice', 'చక్కెర': 'Sugar',
     'ఉల్లిపాయ': 'Onion', 'టొమాటో': 'Tomato', 'బంగాళదుంప': 'Potato',
     'అరటిపండు': 'Banana', 'ఆపిల్': 'Apple', 'బ్రెడ్': 'Bread',
     'గుడ్డు': 'Egg', 'నీళ్ళు': 'Water', 'నూనె': 'Oil',
+    'వెన్న': 'Butter', 'పెరుగు': 'Curd', 'కోడి': 'Chicken',
+    'మామిడికాయ': 'Mango', 'పప్పు': 'Dal', 'అటుకులు': 'Poha',
     'दूध': 'Milk', 'चावल': 'Rice', 'चीनी': 'Sugar',
     'प्याज': 'Onion', 'टमाटर': 'Tomato', 'आलू': 'Potato',
     'केला': 'Banana', 'सेब': 'Apple', 'ब्रेड': 'Bread',
     'अंडा': 'Egg', 'पानी': 'Water', 'तेल': 'Oil',
+    'मक्खन': 'Butter', 'दही': 'Curd', 'मुर्गी': 'Chicken',
+    'आम': 'Mango', 'दाल': 'Dal',
     'paalu': 'Milk', 'palu': 'Milk', 'biyyam': 'Rice', 'biyam': 'Rice',
     'chakkera': 'Sugar', 'chakera': 'Sugar', 'ullipaya': 'Onion',
     'ullipayalu': 'Onion', 'bangaladumpa': 'Potato', 'aratipandu': 'Banana',
     'guddu': 'Egg', 'neellu': 'Water', 'noone': 'Oil', 'nune': 'Oil',
+    'venna': 'Butter', 'perugu': 'Curd', 'kodi': 'Chicken',
+    'mamidikaya': 'Mango', 'pappu': 'Dal', 'atukulu': 'Poha',
     'doodh': 'Milk', 'dudh': 'Milk', 'chawal': 'Rice', 'chini': 'Sugar',
     'pyaaz': 'Onion', 'pyaz': 'Onion', 'aloo': 'Potato', 'kela': 'Banana',
     'seb': 'Apple', 'anda': 'Egg', 'pani': 'Water', 'tel': 'Oil',
+    'makkhan': 'Butter', 'dahi': 'Curd', 'murgi': 'Chicken',
+    'aam': 'Mango', 'daal': 'Dal',
   };
+
+  String getCategory(String product) {
+    switch (product.toLowerCase()) {
+      case 'milk': return 'milk';
+      case 'rice': return 'rice';
+      case 'sugar': return 'sugar';
+      case 'oil': return 'oil';
+      case 'onion': return 'vegetables';
+      case 'tomato': return 'vegetables';
+      case 'potato': return 'vegetables';
+      case 'banana': return 'fruits';
+      case 'apple': return 'fruits';
+      case 'mango': return 'fruits';
+      case 'bread': return 'grains';
+      case 'dal': return 'grains';
+      case 'poha': return 'grains';
+      case 'egg': return 'meat';
+      case 'chicken': return 'meat';
+      case 'butter': return 'dairy';
+      case 'curd': return 'dairy';
+      case 'water': return 'beverages';
+      case 'juice': return 'beverages';
+      case 'cola': return 'beverages';
+      default: return product.toLowerCase();
+    }
+  }
 
   @override
   void initState() {
@@ -113,18 +148,18 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() => _isListening = false);
   }
 
-  void navigateToProducts(String category) async {
-    // Pass cartItems to ProductsScreen and get updated cart back
+  // ✅ Fixed: added subcategory parameter
+  void navigateToProducts(String category, {String? subcategory}) async {
     final updatedCart = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => ProductsScreen(
           category: category,
           cartItems: cartItems,
+          subcategory: subcategory,
         ),
       ),
     );
-    // Update cart with items added in ProductsScreen
     if (updatedCart != null) {
       setState(() {
         cartItems = updatedCart;
@@ -134,25 +169,50 @@ class _HomeScreenState extends State<HomeScreen> {
 
   String findProduct(String spokenText) {
     String lowerText = spokenText.toLowerCase();
+
     for (String key in wordToProduct.keys) {
       if (lowerText.contains(key.toLowerCase())) {
         String product = wordToProduct[key]!;
-        navigateToProducts(product.toLowerCase());
+        navigateToProducts(
+          getCategory(product),
+          subcategory: product.toLowerCase(),
+        );
         return product;
       }
     }
-    if (lowerText.contains('mil') || lowerText.contains('pal') || lowerText.contains('dood')) { navigateToProducts('milk'); return 'Milk'; }
-    if (lowerText.contains('ric') || lowerText.contains('biy') || lowerText.contains('chaw')) { navigateToProducts('rice'); return 'Rice'; }
-    if (lowerText.contains('sug') || lowerText.contains('chak') || lowerText.contains('chin')) { navigateToProducts('sugar'); return 'Sugar'; }
-    if (lowerText.contains('oni') || lowerText.contains('ulli') || lowerText.contains('pyaa')) { navigateToProducts('onion'); return 'Onion'; }
-    if (lowerText.contains('oil') || lowerText.contains('noon') || lowerText.contains('tel')) { navigateToProducts('oil'); return 'Oil'; }
-    if (lowerText.contains('tom')) { navigateToProducts('tomato'); return 'Tomato'; }
-    if (lowerText.contains('pot') || lowerText.contains('aloo')) { navigateToProducts('potato'); return 'Potato'; }
-    if (lowerText.contains('ban') || lowerText.contains('kela')) { navigateToProducts('banana'); return 'Banana'; }
-    if (lowerText.contains('app')) { navigateToProducts('apple'); return 'Apple'; }
-    if (lowerText.contains('bre')) { navigateToProducts('bread'); return 'Bread'; }
-    if (lowerText.contains('egg') || lowerText.contains('gudd') || lowerText.contains('anda')) { navigateToProducts('egg'); return 'Egg'; }
-    if (lowerText.contains('wat') || lowerText.contains('pani')) { navigateToProducts('water'); return 'Water'; }
+
+    // Milk
+    if (lowerText.contains('mil') || lowerText.contains('pal') || lowerText.contains('dood')) { navigateToProducts('milk', subcategory: 'milk'); return 'Milk'; }
+    // Rice
+    if (lowerText.contains('ric') || lowerText.contains('biy') || lowerText.contains('chaw')) { navigateToProducts('rice', subcategory: 'rice'); return 'Rice'; }
+    // Sugar
+    if (lowerText.contains('sug') || lowerText.contains('chak') || lowerText.contains('chin')) { navigateToProducts('sugar', subcategory: 'sugar'); return 'Sugar'; }
+    // Oil
+    if (lowerText.contains('oil') || lowerText.contains('noon') || lowerText.contains('tel')) { navigateToProducts('oil', subcategory: 'oil'); return 'Oil'; }
+    // Vegetables
+    if (lowerText.contains('oni') || lowerText.contains('ulli') || lowerText.contains('pyaa')) { navigateToProducts('vegetables', subcategory: 'onion'); return 'Onion'; }
+    if (lowerText.contains('tom') || lowerText.contains('tamatar')) { navigateToProducts('vegetables', subcategory: 'tomato'); return 'Tomato'; }
+    if (lowerText.contains('pot') || lowerText.contains('aloo') || lowerText.contains('dumpa')) { navigateToProducts('vegetables', subcategory: 'potato'); return 'Potato'; }
+    // Fruits
+    if (lowerText.contains('ban') || lowerText.contains('kela') || lowerText.contains('arati')) { navigateToProducts('fruits', subcategory: 'banana'); return 'Banana'; }
+    if (lowerText.contains('app') || lowerText.contains('seb')) { navigateToProducts('fruits', subcategory: 'apple'); return 'Apple'; }
+    if (lowerText.contains('mang') || lowerText.contains('mamid') || lowerText.contains('aam')) { navigateToProducts('fruits', subcategory: 'mango'); return 'Mango'; }
+    // Dairy
+    if (lowerText.contains('butt') || lowerText.contains('venna') || lowerText.contains('makk')) { navigateToProducts('dairy', subcategory: 'butter'); return 'Butter'; }
+    if (lowerText.contains('curd') || lowerText.contains('peru') || lowerText.contains('dahi')) { navigateToProducts('dairy', subcategory: 'curd'); return 'Curd'; }
+    // Grains
+    if (lowerText.contains('bre') || lowerText.contains('bread')) { navigateToProducts('grains', subcategory: 'bread'); return 'Bread'; }
+    if (lowerText.contains('dal') || lowerText.contains('pappu') || lowerText.contains('daal')) { navigateToProducts('grains', subcategory: 'dal'); return 'Dal'; }
+    if (lowerText.contains('poha') || lowerText.contains('atuk')) { navigateToProducts('grains', subcategory: 'poha'); return 'Poha'; }
+    if (lowerText.contains('atta') || lowerText.contains('flour')) { navigateToProducts('grains', subcategory: 'atta'); return 'Atta'; }
+    // Meat
+    if (lowerText.contains('egg') || lowerText.contains('gudd') || lowerText.contains('anda')) { navigateToProducts('meat', subcategory: 'egg'); return 'Egg'; }
+    if (lowerText.contains('chick') || lowerText.contains('kodi') || lowerText.contains('murgi')) { navigateToProducts('meat', subcategory: 'chicken'); return 'Chicken'; }
+    // Beverages
+    if (lowerText.contains('wat') || lowerText.contains('pani') || lowerText.contains('neel')) { navigateToProducts('beverages', subcategory: 'water'); return 'Water'; }
+    if (lowerText.contains('juic') || lowerText.contains('ras')) { navigateToProducts('beverages', subcategory: 'juice'); return 'Juice'; }
+    if (lowerText.contains('cola') || lowerText.contains('coke') || lowerText.contains('soda')) { navigateToProducts('beverages', subcategory: 'cola'); return 'Cola'; }
+
     return '';
   }
 
@@ -179,7 +239,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
         actions: [
-          // Language Toggle
           GestureDetector(
             onTap: () => langProvider.toggleLanguage(),
             child: Container(
@@ -198,7 +257,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
-          // Cart Icon with badge
           Stack(
             children: [
               IconButton(
@@ -262,7 +320,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 24),
 
-            // Voice Button
             Center(
               child: GestureDetector(
                 onTap: _isListening ? stopListening : startListening,
@@ -308,7 +365,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 24),
 
-            // Recognized Text Box
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
@@ -335,7 +391,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
-            // Found Product
             if (_foundProduct.isNotEmpty) ...[
               const SizedBox(height: 16),
               Container(
@@ -398,6 +453,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget buildCategoryCard(String emoji, String name, Color color, String category) {
     return GestureDetector(
+      // Category card tap — no subcategory, show all products in category
       onTap: () => navigateToProducts(category),
       child: Container(
         decoration: BoxDecoration(

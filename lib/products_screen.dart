@@ -8,10 +8,12 @@ import 'app_strings.dart';
 class ProductsScreen extends StatefulWidget {
   final String category;
   final List<Map<String, dynamic>> cartItems;
+  final String? subcategory; // null means show all in category
   const ProductsScreen({
     super.key,
     required this.category,
     required this.cartItems,
+    this.subcategory,
   });
 
   @override
@@ -60,15 +62,37 @@ class _ProductsScreenState extends State<ProductsScreen> {
     );
   }
 
-  String getCategoryTitle(String category, String lang) {
-    switch (category.toLowerCase()) {
+  String getScreenTitle(String lang) {
+    // If subcategory exists show subcategory name, else show category name
+    if (widget.subcategory != null) {
+      return widget.subcategory![0].toUpperCase() +
+          widget.subcategory!.substring(1);
+    }
+    switch (widget.category.toLowerCase()) {
       case 'vegetables': return AppStrings.get('vegetables', lang);
       case 'fruits': return AppStrings.get('fruits', lang);
       case 'dairy': return AppStrings.get('dairy', lang);
       case 'grains': return AppStrings.get('grains', lang);
       case 'meat': return AppStrings.get('meat', lang);
       case 'beverages': return AppStrings.get('beverages', lang);
-      default: return category[0].toUpperCase() + category.substring(1);
+      default: return widget.category[0].toUpperCase() + widget.category.substring(1);
+    }
+  }
+
+  // Build Firestore query based on category and subcategory
+  Stream<QuerySnapshot> getProductsStream() {
+    if (widget.subcategory != null) {
+      // Voice search — filter by subcategory
+      return FirebaseFirestore.instance
+          .collection('products')
+          .where('subcategory', isEqualTo: widget.subcategory)
+          .snapshots();
+    } else {
+      // Category card tap — show all in category
+      return FirebaseFirestore.instance
+          .collection('products')
+          .where('category', isEqualTo: widget.category)
+          .snapshots();
     }
   }
 
@@ -84,12 +108,11 @@ class _ProductsScreenState extends State<ProductsScreen> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () {
-            // Return updated cart to HomeScreen
             Navigator.pop(context, cartItems);
           },
         ),
         title: Text(
-          getCategoryTitle(widget.category, lang),
+          getScreenTitle(lang),
           style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
@@ -136,10 +159,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
         ],
       ),
       body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('products')
-            .where('category', isEqualTo: widget.category)
-            .snapshots(),
+        stream: getProductsStream(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
