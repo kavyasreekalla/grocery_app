@@ -6,6 +6,7 @@ import 'signup_screen.dart';
 import 'home_screen.dart';
 import 'language_provider.dart';
 import 'app_strings.dart';
+import 'splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -34,7 +35,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'VoiceCart',
       debugShowCheckedModeBanner: false,
-      home: const LoginScreen(),
+      home: const SplashScreen(),
     );
   }
 }

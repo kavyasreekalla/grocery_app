@@ -1,3 +1,5 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'language_provider.dart';
@@ -65,8 +67,11 @@ class _CartScreenState extends State<CartScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.shopping_cart_outlined,
-                      size: 80, color: Colors.grey),
+                  const Icon(
+                    Icons.shopping_cart_outlined,
+                    size: 80,
+                    color: Colors.grey,
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     AppStrings.get('cart_empty', lang),
@@ -88,6 +93,8 @@ class _CartScreenState extends State<CartScreen> {
                     itemCount: items.length,
                     itemBuilder: (context, index) {
                       var item = items[index];
+                      String? imageUrl = item['imageUrl'];
+
                       return Container(
                         margin: const EdgeInsets.only(bottom: 16),
                         padding: const EdgeInsets.all(16),
@@ -106,16 +113,42 @@ class _CartScreenState extends State<CartScreen> {
                         child: Row(
                           children: [
                             Container(
-                              width: 50,
-                              height: 50,
+                              width: 55,
+                              height: 55,
                               decoration: BoxDecoration(
                                 color: Colors.green.shade50,
                                 borderRadius: BorderRadius.circular(10),
                               ),
-                              child: const Icon(
-                                Icons.shopping_basket,
-                                color: Colors.green,
-                              ),
+                              child: imageUrl != null && imageUrl.isNotEmpty
+                                  ? ClipRRect(
+                                      borderRadius:
+                                          BorderRadius.circular(10),
+                                      child: Image.network(
+                                        imageUrl,
+                                        fit: BoxFit.cover,
+                                        loadingBuilder:
+                                            (context, child, progress) {
+                                          if (progress == null) return child;
+                                          return const Center(
+                                            child: CircularProgressIndicator(
+                                              color: Colors.green,
+                                              strokeWidth: 2,
+                                            ),
+                                          );
+                                        },
+                                        errorBuilder:
+                                            (context, error, stackTrace) {
+                                          return const Icon(
+                                            Icons.shopping_basket,
+                                            color: Colors.green,
+                                          );
+                                        },
+                                      ),
+                                    )
+                                  : const Icon(
+                                      Icons.shopping_basket,
+                                      color: Colors.green,
+                                    ),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
@@ -226,7 +259,33 @@ class _CartScreenState extends State<CartScreen> {
                       ),
                       const SizedBox(height: 16),
                       ElevatedButton(
-                        onPressed: () {
+                        onPressed: () async {
+                          try {
+                            User? user = FirebaseAuth.instance.currentUser;
+                            if (user != null) {
+                              await FirebaseFirestore.instance
+                                  .collection('orders')
+                                  .add({
+                                'userId': user.uid,
+                                'items': items
+                                    .map((item) => {
+                                          'name': item['name'],
+                                          'price': item['price'],
+                                          'quantity': item['quantity'],
+                                          'unit': item['unit'],
+                                          'brand': item['brand'],
+                                          'imageUrl': item['imageUrl'] ?? '',
+                                        })
+                                    .toList(),
+                                'totalAmount': totalPrice,
+                                'orderDate': DateTime.now(),
+                                'status': 'Placed',
+                              });
+                            }
+                          } catch (e) {
+                            print('Error saving order: $e');
+                          }
+
                           showDialog(
                             context: context,
                             builder: (context) => AlertDialog(
@@ -239,8 +298,8 @@ class _CartScreenState extends State<CartScreen> {
                                 TextButton(
                                   onPressed: () {
                                     setState(() => items.clear());
-                                    Navigator.pop(context, items);
-                                    Navigator.pop(context, items);
+                                    Navigator.popUntil(
+                                        context, (route) => route.isFirst);
                                   },
                                   child: const Text(
                                     'OK',

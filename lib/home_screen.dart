@@ -6,6 +6,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'products_screen.dart';
 import 'cart_screen.dart';
+import 'profile_screen.dart';
 import 'language_provider.dart';
 import 'app_strings.dart';
 
@@ -15,7 +16,7 @@ class HomeScreen extends StatefulWidget {
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
-
+final TextEditingController _searchController = TextEditingController();
 class _HomeScreenState extends State<HomeScreen> {
   String userName = '';
   final stt.SpeechToText _speech = stt.SpeechToText();
@@ -23,6 +24,11 @@ class _HomeScreenState extends State<HomeScreen> {
   String _recognizedText = '';
   String _foundProduct = '';
   List<Map<String, dynamic>> cartItems = [];
+  @override
+void dispose() {
+  _searchController.dispose();
+  super.dispose();
+}
 
   final Map<String, String> wordToProduct = {
     'milk': 'Milk', 'rice': 'Rice', 'sugar': 'Sugar',
@@ -148,7 +154,6 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() => _isListening = false);
   }
 
-  // ✅ Fixed: added subcategory parameter
   void navigateToProducts(String category, {String? subcategory}) async {
     final updatedCart = await Navigator.push(
       context,
@@ -160,11 +165,9 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
-    if (updatedCart != null) {
-      setState(() {
-        cartItems = updatedCart;
-      });
-    }
+    setState(() {
+      cartItems = updatedCart ?? [];
+    });
   }
 
   String findProduct(String spokenText) {
@@ -181,34 +184,24 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     }
 
-    // Milk
     if (lowerText.contains('mil') || lowerText.contains('pal') || lowerText.contains('dood')) { navigateToProducts('milk', subcategory: 'milk'); return 'Milk'; }
-    // Rice
     if (lowerText.contains('ric') || lowerText.contains('biy') || lowerText.contains('chaw')) { navigateToProducts('rice', subcategory: 'rice'); return 'Rice'; }
-    // Sugar
     if (lowerText.contains('sug') || lowerText.contains('chak') || lowerText.contains('chin')) { navigateToProducts('sugar', subcategory: 'sugar'); return 'Sugar'; }
-    // Oil
     if (lowerText.contains('oil') || lowerText.contains('noon') || lowerText.contains('tel')) { navigateToProducts('oil', subcategory: 'oil'); return 'Oil'; }
-    // Vegetables
     if (lowerText.contains('oni') || lowerText.contains('ulli') || lowerText.contains('pyaa')) { navigateToProducts('vegetables', subcategory: 'onion'); return 'Onion'; }
     if (lowerText.contains('tom') || lowerText.contains('tamatar')) { navigateToProducts('vegetables', subcategory: 'tomato'); return 'Tomato'; }
     if (lowerText.contains('pot') || lowerText.contains('aloo') || lowerText.contains('dumpa')) { navigateToProducts('vegetables', subcategory: 'potato'); return 'Potato'; }
-    // Fruits
     if (lowerText.contains('ban') || lowerText.contains('kela') || lowerText.contains('arati')) { navigateToProducts('fruits', subcategory: 'banana'); return 'Banana'; }
     if (lowerText.contains('app') || lowerText.contains('seb')) { navigateToProducts('fruits', subcategory: 'apple'); return 'Apple'; }
     if (lowerText.contains('mang') || lowerText.contains('mamid') || lowerText.contains('aam')) { navigateToProducts('fruits', subcategory: 'mango'); return 'Mango'; }
-    // Dairy
     if (lowerText.contains('butt') || lowerText.contains('venna') || lowerText.contains('makk')) { navigateToProducts('dairy', subcategory: 'butter'); return 'Butter'; }
     if (lowerText.contains('curd') || lowerText.contains('peru') || lowerText.contains('dahi')) { navigateToProducts('dairy', subcategory: 'curd'); return 'Curd'; }
-    // Grains
     if (lowerText.contains('bre') || lowerText.contains('bread')) { navigateToProducts('grains', subcategory: 'bread'); return 'Bread'; }
     if (lowerText.contains('dal') || lowerText.contains('pappu') || lowerText.contains('daal')) { navigateToProducts('grains', subcategory: 'dal'); return 'Dal'; }
     if (lowerText.contains('poha') || lowerText.contains('atuk')) { navigateToProducts('grains', subcategory: 'poha'); return 'Poha'; }
     if (lowerText.contains('atta') || lowerText.contains('flour')) { navigateToProducts('grains', subcategory: 'atta'); return 'Atta'; }
-    // Meat
     if (lowerText.contains('egg') || lowerText.contains('gudd') || lowerText.contains('anda')) { navigateToProducts('meat', subcategory: 'egg'); return 'Egg'; }
     if (lowerText.contains('chick') || lowerText.contains('kodi') || lowerText.contains('murgi')) { navigateToProducts('meat', subcategory: 'chicken'); return 'Chicken'; }
-    // Beverages
     if (lowerText.contains('wat') || lowerText.contains('pani') || lowerText.contains('neel')) { navigateToProducts('beverages', subcategory: 'water'); return 'Water'; }
     if (lowerText.contains('juic') || lowerText.contains('ras')) { navigateToProducts('beverages', subcategory: 'juice'); return 'Juice'; }
     if (lowerText.contains('cola') || lowerText.contains('coke') || lowerText.contains('soda')) { navigateToProducts('beverages', subcategory: 'cola'); return 'Cola'; }
@@ -268,9 +261,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       builder: (context) => CartScreen(cartItems: cartItems),
                     ),
                   );
-                  if (updatedCart != null) {
-                    setState(() => cartItems = updatedCart);
-                  }
+                  setState(() {
+                    cartItems = updatedCart ?? [];
+                  });
                 },
               ),
               if (cartItems.isNotEmpty)
@@ -296,7 +289,14 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.person, color: Colors.white),
-            onPressed: () {},
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ProfileScreen(),
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -319,6 +319,51 @@ class _HomeScreenState extends State<HomeScreen> {
               style: const TextStyle(fontSize: 14, color: Colors.grey),
             ),
             const SizedBox(height: 24),
+            // Search Bar
+Row(
+  children: [
+    Expanded(
+      child: TextField(
+        controller: _searchController,
+        decoration: InputDecoration(
+          hintText: AppStrings.get('search_hint', lang),
+          prefixIcon: const Icon(Icons.search, color: Colors.green),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Colors.green, width: 2),
+          ),
+        ),
+        onSubmitted: (value) {
+          if (value.isNotEmpty) {
+            findProduct(value);
+            _searchController.clear();
+          }
+        },
+      ),
+    ),
+    const SizedBox(width: 8),
+    ElevatedButton(
+      onPressed: () {
+        if (_searchController.text.isNotEmpty) {
+          findProduct(_searchController.text);
+          _searchController.clear();
+        }
+      },
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.green,
+        padding: const EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+      child: const Icon(Icons.search, color: Colors.white),
+    ),
+  ],
+),
+const SizedBox(height: 24),
 
             Center(
               child: GestureDetector(
@@ -453,7 +498,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget buildCategoryCard(String emoji, String name, Color color, String category) {
     return GestureDetector(
-      // Category card tap — no subcategory, show all products in category
       onTap: () => navigateToProducts(category),
       child: Container(
         decoration: BoxDecoration(

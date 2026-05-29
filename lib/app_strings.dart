@@ -31,6 +31,7 @@ class AppStrings {
       'have_account': 'Already have an account? Login',
       'shop_smarter': 'Shop smarter with your voice',
       'create_account': 'Create your account',
+      'search_hint': 'Search groceries...',
     },
     'te': {
       'greeting': 'హాయ్',
@@ -63,6 +64,7 @@ class AppStrings {
       'have_account': 'ఖాతా ఉందా? లాగిన్',
       'shop_smarter': 'మీ వాయిస్‌తో షాపింగ్ చేయండి',
       'create_account': 'మీ ఖాతా సృష్టించండి',
+      'search_hint': 'కిరాణా వస్తువులు వెతకండి...',
     },
     'hi': {
       'greeting': 'नमस्ते',
@@ -95,6 +97,7 @@ class AppStrings {
       'have_account': 'खाता है? लॉगिन',
       'shop_smarter': 'अपनी आवाज़ से खरीदारी करें',
       'create_account': 'अपना खाता बनाएं',
+      'search_hint': 'किराना खोजें...',
     },
   };
 

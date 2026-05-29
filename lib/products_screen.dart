@@ -8,7 +8,7 @@ import 'app_strings.dart';
 class ProductsScreen extends StatefulWidget {
   final String category;
   final List<Map<String, dynamic>> cartItems;
-  final String? subcategory; // null means show all in category
+  final String? subcategory;
   const ProductsScreen({
     super.key,
     required this.category,
@@ -43,6 +43,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
           'brand': product['brand'],
           'unit': product['unit'],
           'quantity': 1,
+          'imageUrl': product['imageUrl'] ?? '',
         });
       }
     });
@@ -63,7 +64,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
   }
 
   String getScreenTitle(String lang) {
-    // If subcategory exists show subcategory name, else show category name
     if (widget.subcategory != null) {
       return widget.subcategory![0].toUpperCase() +
           widget.subcategory!.substring(1);
@@ -79,16 +79,13 @@ class _ProductsScreenState extends State<ProductsScreen> {
     }
   }
 
-  // Build Firestore query based on category and subcategory
   Stream<QuerySnapshot> getProductsStream() {
     if (widget.subcategory != null) {
-      // Voice search — filter by subcategory
       return FirebaseFirestore.instance
           .collection('products')
           .where('subcategory', isEqualTo: widget.subcategory)
           .snapshots();
     } else {
-      // Category card tap — show all in category
       return FirebaseFirestore.instance
           .collection('products')
           .where('category', isEqualTo: widget.category)
@@ -183,6 +180,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
               var product = snapshot.data!.docs[index].data()
                   as Map<String, dynamic>;
 
+              // Get image URL from Firestore
+              String? imageUrl = product['imageUrl'];
+
               return Container(
                 margin: const EdgeInsets.only(bottom: 16),
                 padding: const EdgeInsets.all(16),
@@ -200,18 +200,43 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 ),
                 child: Row(
                   children: [
+                    // Product Image
                     Container(
-                      width: 60,
-                      height: 60,
+                      width: 70,
+                      height: 70,
                       decoration: BoxDecoration(
                         color: Colors.green.shade50,
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Icon(
-                        Icons.shopping_basket,
-                        color: Colors.green,
-                        size: 30,
-                      ),
+                      child: imageUrl != null && imageUrl.isNotEmpty
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Image.network(
+                                imageUrl,
+                                fit: BoxFit.cover,
+                                loadingBuilder: (context, child, progress) {
+                                  if (progress == null) return child;
+                                  return const Center(
+                                    child: CircularProgressIndicator(
+                                      color: Colors.green,
+                                      strokeWidth: 2,
+                                    ),
+                                  );
+                                },
+                                errorBuilder: (context, error, stackTrace) {
+                                  return const Icon(
+                                    Icons.shopping_basket,
+                                    color: Colors.green,
+                                    size: 30,
+                                  );
+                                },
+                              ),
+                            )
+                          : const Icon(
+                              Icons.shopping_basket,
+                              color: Colors.green,
+                              size: 30,
+                            ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
