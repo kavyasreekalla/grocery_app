@@ -16,19 +16,17 @@ class HomeScreen extends StatefulWidget {
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
-final TextEditingController _searchController = TextEditingController();
+
 class _HomeScreenState extends State<HomeScreen> {
   String userName = '';
   final stt.SpeechToText _speech = stt.SpeechToText();
+  // The controller lives inside the State, so every new HomeScreen gets its
+  // own fresh controller instead of reusing one that was already disposed.
+  final TextEditingController _searchController = TextEditingController();
   bool _isListening = false;
   String _recognizedText = '';
   String _foundProduct = '';
   List<Map<String, dynamic>> cartItems = [];
-  @override
-void dispose() {
-  _searchController.dispose();
-  super.dispose();
-}
 
   final Map<String, String> wordToProduct = {
     'milk': 'Milk', 'rice': 'Rice', 'sugar': 'Sugar',
@@ -95,21 +93,31 @@ void dispose() {
     getUserName();
   }
 
+  @override
+  void dispose() {
+    _speech.stop();
+    _searchController.dispose();
+    super.dispose();
+  }
+
   Future<void> getUserName() async {
     User? user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      DocumentSnapshot doc = await FirebaseFirestore.instance
+      final doc = await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
           .get();
+      // The screen may have been closed while we were waiting for Firestore.
+      if (!mounted) return;
       setState(() {
-        userName = doc['name'];
+        userName = doc.data()?['name'] ?? '';
       });
     }
   }
 
   Future<void> startListening() async {
     var status = await Permission.microphone.request();
+    if (!mounted) return;
     if (status != PermissionStatus.granted) {
       setState(() => _recognizedText = 'Microphone permission denied!');
       return;
@@ -117,17 +125,20 @@ void dispose() {
 
     bool available = await _speech.initialize(
       onStatus: (status) {
+        if (!mounted) return;
         if (status == 'done' || status == 'notListening') {
           setState(() => _isListening = false);
         }
       },
       onError: (error) {
+        if (!mounted) return;
         setState(() {
           _isListening = false;
           _recognizedText = 'Error: ${error.errorMsg}';
         });
       },
     );
+    if (!mounted) return;
 
     if (available) {
       setState(() {
@@ -137,6 +148,7 @@ void dispose() {
       });
       _speech.listen(
         onResult: (result) {
+          if (!mounted) return;
           setState(() {
             _recognizedText = result.recognizedWords;
             _foundProduct = findProduct(result.recognizedWords);
@@ -165,6 +177,7 @@ void dispose() {
         ),
       ),
     );
+    if (!mounted) return;
     setState(() {
       cartItems = updatedCart ?? [];
     });
@@ -261,6 +274,7 @@ void dispose() {
                       builder: (context) => CartScreen(cartItems: cartItems),
                     ),
                   );
+                  if (!mounted) return;
                   setState(() {
                     cartItems = updatedCart ?? [];
                   });
@@ -320,50 +334,51 @@ void dispose() {
             ),
             const SizedBox(height: 24),
             // Search Bar
-Row(
-  children: [
-    Expanded(
-      child: TextField(
-        controller: _searchController,
-        decoration: InputDecoration(
-          hintText: AppStrings.get('search_hint', lang),
-          prefixIcon: const Icon(Icons.search, color: Colors.green),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Colors.green, width: 2),
-          ),
-        ),
-        onSubmitted: (value) {
-          if (value.isNotEmpty) {
-            findProduct(value);
-            _searchController.clear();
-          }
-        },
-      ),
-    ),
-    const SizedBox(width: 8),
-    ElevatedButton(
-      onPressed: () {
-        if (_searchController.text.isNotEmpty) {
-          findProduct(_searchController.text);
-          _searchController.clear();
-        }
-      },
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.green,
-        padding: const EdgeInsets.all(16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-      ),
-      child: const Icon(Icons.search, color: Colors.white),
-    ),
-  ],
-),
-const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      hintText: AppStrings.get('search_hint', lang),
+                      prefixIcon: const Icon(Icons.search, color: Colors.green),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide:
+                            const BorderSide(color: Colors.green, width: 2),
+                      ),
+                    ),
+                    onSubmitted: (value) {
+                      if (value.isNotEmpty) {
+                        findProduct(value);
+                        _searchController.clear();
+                      }
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: () {
+                    if (_searchController.text.isNotEmpty) {
+                      findProduct(_searchController.text);
+                      _searchController.clear();
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    padding: const EdgeInsets.all(16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Icon(Icons.search, color: Colors.white),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
 
             Center(
               child: GestureDetector(

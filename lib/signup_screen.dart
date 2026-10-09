@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
+import 'home_screen.dart';
 import 'language_provider.dart';
 import 'app_strings.dart';
 
@@ -19,7 +20,16 @@ class _SignupScreenState extends State<SignupScreen> {
   final phoneController = TextEditingController();
   bool isLoading = false;
 
-  Future<void> signUp(String lang) async {
+  @override
+  void dispose() {
+    nameController.dispose();
+    emailController.dispose();
+    passwordController.dispose();
+    phoneController.dispose();
+    super.dispose();
+  }
+
+  Future<void> signUp() async {
     setState(() => isLoading = true);
 
     try {
@@ -39,21 +49,22 @@ class _SignupScreenState extends State<SignupScreen> {
         'createdAt': DateTime.now(),
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppStrings.get('order_placed', lang)),
-          backgroundColor: Colors.green,
-        ),
-      );
+      if (!mounted) return;
 
-      Navigator.pop(context);
+      // Firebase has already signed the new user in, so go straight to the
+      // home screen and clear the login/signup screens from the back stack.
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const HomeScreen()),
+        (route) => false,
+      );
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: $e')),
       );
+      setState(() => isLoading = false);
     }
-
-    setState(() => isLoading = false);
   }
 
   @override
@@ -169,7 +180,7 @@ class _SignupScreenState extends State<SignupScreen> {
               const SizedBox(height: 20),
 
               ElevatedButton(
-                onPressed: isLoading ? null : () => signUp(lang),
+                onPressed: isLoading ? null : signUp,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
                   minimumSize: const Size(double.infinity, 50),
