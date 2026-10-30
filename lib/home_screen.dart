@@ -6,6 +6,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'products_screen.dart';
 import 'cart_screen.dart';
+import 'chat_screen.dart';
 import 'profile_screen.dart';
 import 'language_provider.dart';
 import 'app_strings.dart';
@@ -179,7 +180,22 @@ class _HomeScreenState extends State<HomeScreen> {
     );
     if (!mounted) return;
     setState(() {
-      cartItems = updatedCart ?? [];
+      cartItems = updatedCart ?? cartItems;
+    });
+  }
+
+  // Opens the AI assistant. The cart goes in, and the updated cart comes back
+  // (items added or an order placed from the chat).
+  void openChat() async {
+    final updatedCart = await Navigator.push<List<Map<String, dynamic>>>(
+      context,
+      MaterialPageRoute<List<Map<String, dynamic>>>(
+        builder: (context) => ChatScreen(cartItems: cartItems),
+      ),
+    );
+    if (!mounted) return;
+    setState(() {
+      cartItems = updatedCart ?? cartItems;
     });
   }
 
@@ -229,6 +245,22 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       backgroundColor: Colors.white,
+      floatingActionButton: FloatingActionButton.extended(
+        backgroundColor: Colors.green,
+        onPressed: openChat,
+        icon: const Icon(Icons.chat_bubble, color: Colors.white),
+        label: Text(
+          lang == 'te'
+              ? 'మిత్రా'
+              : lang == 'hi'
+                  ? 'मित्रा'
+                  : 'Mitra',
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
       appBar: AppBar(
         backgroundColor: Colors.green,
         title: const Row(
@@ -276,7 +308,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   );
                   if (!mounted) return;
                   setState(() {
-                    cartItems = updatedCart ?? [];
+                    cartItems = updatedCart ?? cartItems;
                   });
                 },
               ),
@@ -315,7 +347,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 90),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

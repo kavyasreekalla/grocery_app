@@ -15,6 +15,7 @@ class CartScreen extends StatefulWidget {
 
 class _CartScreenState extends State<CartScreen> {
   late List<Map<String, dynamic>> items;
+  bool _placing = false;
 
   @override
   void initState() {
@@ -45,291 +46,340 @@ class _CartScreenState extends State<CartScreen> {
     });
   }
 
+  Future<void> placeOrder(String lang) async {
+    final placedTotal = totalPrice;
+    setState(() => _placing = true);
+
+    bool saved = false;
+    try {
+      User? user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        await FirebaseFirestore.instance.collection('orders').add({
+          'userId': user.uid,
+          'items': items
+              .map((item) => {
+                    'name': item['name'],
+                    'price': item['price'],
+                    'quantity': item['quantity'],
+                    'unit': item['unit'],
+                    'brand': item['brand'],
+                    'imageUrl': item['imageUrl'] ?? '',
+                  })
+              .toList(),
+          'totalAmount': placedTotal,
+          'orderDate': DateTime.now(),
+          'status': 'Placed',
+        });
+        saved = true;
+      }
+    } catch (e) {
+      debugPrint('Error saving order: $e');
+    }
+
+    if (!mounted) return;
+
+    // Only say "order placed" when the order was really saved.
+    if (!saved) {
+      setState(() => _placing = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            lang == 'te'
+                ? 'ఆర్డర్ చేయలేకపోయాము. దయచేసి మళ్లీ ప్రయత్నించండి.'
+                : lang == 'hi'
+                    ? 'ऑर्डर नहीं हो सका। कृपया फिर से कोशिश करें।'
+                    : 'Could not place the order. Please try again.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    // Clear the cart right away so the order cannot be placed twice.
+    setState(() {
+      items.clear();
+      _placing = false;
+    });
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(AppStrings.get('order_placed', lang)),
+        content: Text('₹$placedTotal'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              // Close the dialog, then leave the cart and hand back the
+              // (now empty) cart so the previous screen is updated too.
+              Navigator.pop(dialogContext);
+              Navigator.pop(context, items);
+            },
+            child: const Text(
+              'OK',
+              style: TextStyle(color: Colors.green),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final langProvider = Provider.of<LanguageProvider>(context);
     final lang = langProvider.language;
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.green,
-        title: Text(
-          AppStrings.get('my_cart', lang),
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
+    return PopScope(
+      // Whichever way the user leaves (arrow or phone back button), the
+      // updated cart goes back to the previous screen. Without this, the
+      // previous screen received nothing and emptied the cart.
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        Navigator.of(context).pop(items);
+      },
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(
+          backgroundColor: Colors.green,
+          iconTheme: const IconThemeData(color: Colors.white),
+          title: Text(
+            AppStrings.get('my_cart', lang),
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
-      ),
-      body: items.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+        body: items.isEmpty
+            ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.shopping_cart_outlined,
+                      size: 80,
+                      color: Colors.grey,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      AppStrings.get('cart_empty', lang),
+                      style: const TextStyle(fontSize: 18, color: Colors.grey),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      AppStrings.get('use_voice', lang),
+                      style: const TextStyle(fontSize: 14, color: Colors.grey),
+                    ),
+                  ],
+                ),
+              )
+            : Column(
                 children: [
-                  const Icon(
-                    Icons.shopping_cart_outlined,
-                    size: 80,
-                    color: Colors.grey,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    AppStrings.get('cart_empty', lang),
-                    style: const TextStyle(fontSize: 18, color: Colors.grey),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    AppStrings.get('use_voice', lang),
-                    style: const TextStyle(fontSize: 14, color: Colors.grey),
-                  ),
-                ],
-              ),
-            )
-          : Column(
-              children: [
-                Expanded(
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: items.length,
-                    itemBuilder: (context, index) {
-                      var item = items[index];
-                      String? imageUrl = item['imageUrl'];
+                  Expanded(
+                    child: ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: items.length,
+                      itemBuilder: (context, index) {
+                        var item = items[index];
+                        String? imageUrl = item['imageUrl'];
 
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 16),
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.grey.shade200),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.grey.withOpacity(0.1),
-                              blurRadius: 8,
-                              spreadRadius: 2,
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 55,
-                              height: 55,
-                              decoration: BoxDecoration(
-                                color: Colors.green.shade50,
-                                borderRadius: BorderRadius.circular(10),
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.grey.shade200),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.withOpacity(0.1),
+                                blurRadius: 8,
+                                spreadRadius: 2,
                               ),
-                              child: imageUrl != null && imageUrl.isNotEmpty
-                                  ? ClipRRect(
-                                      borderRadius:
-                                          BorderRadius.circular(10),
-                                      child: Image.network(
-                                        imageUrl,
-                                        fit: BoxFit.cover,
-                                        loadingBuilder:
-                                            (context, child, progress) {
-                                          if (progress == null) return child;
-                                          return const Center(
-                                            child: CircularProgressIndicator(
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 55,
+                                height: 55,
+                                decoration: BoxDecoration(
+                                  color: Colors.green.shade50,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: imageUrl != null && imageUrl.isNotEmpty
+                                    ? ClipRRect(
+                                        borderRadius:
+                                            BorderRadius.circular(10),
+                                        child: Image.network(
+                                          imageUrl,
+                                          fit: BoxFit.cover,
+                                          loadingBuilder:
+                                              (context, child, progress) {
+                                            if (progress == null) return child;
+                                            return const Center(
+                                              child: CircularProgressIndicator(
+                                                color: Colors.green,
+                                                strokeWidth: 2,
+                                              ),
+                                            );
+                                          },
+                                          errorBuilder:
+                                              (context, error, stackTrace) {
+                                            return const Icon(
+                                              Icons.shopping_basket,
                                               color: Colors.green,
-                                              strokeWidth: 2,
-                                            ),
-                                          );
-                                        },
-                                        errorBuilder:
-                                            (context, error, stackTrace) {
-                                          return const Icon(
-                                            Icons.shopping_basket,
-                                            color: Colors.green,
-                                          );
-                                        },
+                                            );
+                                          },
+                                        ),
+                                      )
+                                    : const Icon(
+                                        Icons.shopping_basket,
+                                        color: Colors.green,
                                       ),
-                                    )
-                                  : const Icon(
-                                      Icons.shopping_basket,
-                                      color: Colors.green,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      item['name'],
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                                    Text(
+                                      '₹${item['price']} / ${item['unit']}',
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        color: Colors.green,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Row(
                                 children: [
-                                  Text(
-                                    item['name'],
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
+                                  GestureDetector(
+                                    onTap: () => decreaseQuantity(index),
+                                    child: Container(
+                                      width: 28,
+                                      height: 28,
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey.shade200,
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: const Icon(Icons.remove, size: 16),
                                     ),
                                   ),
-                                  Text(
-                                    '₹${item['price']} / ${item['unit']}',
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      color: Colors.green,
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8),
+                                    child: Text(
+                                      '${item['quantity']}',
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                  GestureDetector(
+                                    onTap: () => increaseQuantity(index),
+                                    child: Container(
+                                      width: 28,
+                                      height: 28,
+                                      decoration: BoxDecoration(
+                                        color: Colors.green,
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: const Icon(
+                                        Icons.add,
+                                        size: 16,
+                                        color: Colors.white,
+                                      ),
                                     ),
                                   ),
                                 ],
                               ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+
+                  // Total and Order Button
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withOpacity(0.2),
+                          blurRadius: 10,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              AppStrings.get('total', lang),
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                            Row(
-                              children: [
-                                GestureDetector(
-                                  onTap: () => decreaseQuantity(index),
-                                  child: Container(
-                                    width: 28,
-                                    height: 28,
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey.shade200,
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: const Icon(Icons.remove, size: 16),
-                                  ),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 8),
-                                  child: Text(
-                                    '${item['quantity']}',
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                                GestureDetector(
-                                  onTap: () => increaseQuantity(index),
-                                  child: Container(
-                                    width: 28,
-                                    height: 28,
-                                    decoration: BoxDecoration(
-                                      color: Colors.green,
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: const Icon(
-                                      Icons.add,
-                                      size: 16,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
-                              ],
+                            Text(
+                              '₹$totalPrice',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.green,
+                              ),
                             ),
                           ],
                         ),
-                      );
-                    },
-                  ),
-                ),
-
-                // Total and Order Button
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.withOpacity(0.2),
-                        blurRadius: 10,
-                        spreadRadius: 2,
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            AppStrings.get('total', lang),
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: _placing ? null : () => placeOrder(lang),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            minimumSize: const Size(double.infinity, 50),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          Text(
-                            '₹$totalPrice',
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.green,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: () async {
-                          try {
-                            User? user = FirebaseAuth.instance.currentUser;
-                            if (user != null) {
-                              await FirebaseFirestore.instance
-                                  .collection('orders')
-                                  .add({
-                                'userId': user.uid,
-                                'items': items
-                                    .map((item) => {
-                                          'name': item['name'],
-                                          'price': item['price'],
-                                          'quantity': item['quantity'],
-                                          'unit': item['unit'],
-                                          'brand': item['brand'],
-                                          'imageUrl': item['imageUrl'] ?? '',
-                                        })
-                                    .toList(),
-                                'totalAmount': totalPrice,
-                                'orderDate': DateTime.now(),
-                                'status': 'Placed',
-                              });
-                            }
-                          } catch (e) {
-                            print('Error saving order: $e');
-                          }
-
-                          showDialog(
-                            context: context,
-                            builder: (context) => AlertDialog(
-                              title: Text(
-                                  AppStrings.get('order_placed', lang)),
-                              content: Text(
-                                '₹$totalPrice',
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () {
-                                    setState(() => items.clear());
-                                    Navigator.popUntil(
-                                        context, (route) => route.isFirst);
-                                  },
-                                  child: const Text(
-                                    'OK',
-                                    style: TextStyle(color: Colors.green),
+                          child: _placing
+                              ? const SizedBox(
+                                  width: 22,
+                                  height: 22,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : Text(
+                                  AppStrings.get('place_order', lang),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 18,
                                   ),
                                 ),
-                              ],
-                            ),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          minimumSize: const Size(double.infinity, 50),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
                         ),
-                        child: Text(
-                          AppStrings.get('place_order', lang),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                          ),
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
+      ),
     );
   }
 }

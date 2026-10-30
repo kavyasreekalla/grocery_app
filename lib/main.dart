@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import 'signup_screen.dart';
@@ -19,6 +20,22 @@ void main() async {
       storageBucket: "voicecart-6b655.firebasestorage.app",
     ),
   );
+
+  // App Check: the AI assistant (Firebase AI Logic) needs it.
+  // The debug token is passed in when the app is built, with
+  //   --dart-define=APP_CHECK_DEBUG_TOKEN=<your token>
+  // so the token itself is never saved in the code or on GitHub.
+  const appCheckDebugToken = String.fromEnvironment('APP_CHECK_DEBUG_TOKEN');
+  try {
+    await FirebaseAppCheck.instance.activate(
+      providerAndroid: appCheckDebugToken.isEmpty
+          ? const AndroidDebugProvider()
+          : AndroidDebugProvider(debugToken: appCheckDebugToken),
+    );
+  } catch (e) {
+    debugPrint('App Check activation failed: $e');
+  }
+
   runApp(
     ChangeNotifierProvider(
       create: (context) => LanguageProvider(),
